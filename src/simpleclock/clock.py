@@ -7,12 +7,25 @@ default_comment_start = "elapsed since start"
 class Clock:
     """
     Simple class for monitoring execution time. Relies on python standard library time (using .perf_counter).
-    times: elapsed_since_start and elapsed_since_last_call, call meaning one of the following functions call (or start
-    of the clock)
-    functions:
-        get, print: get/print elapsed time
-        call: silent method to reset elapsed_since_last_call
-    the silent version of a function does not trigger a call (i.e. does not reset elapsed_since_last_call)
+    attr:
+    -- elapsed_since_start, elapsed_since_last_call: Reader objects, yieling methods: get, print, call. (
+    "since_last_call" means since last non silent method call)
+    -- silent: TimeReader pair (elapsed_since_start, elapsed_since_last_call) yielding silent versions of TimeReader
+    methods.
+    TimeReader methods:
+        get, print: get/print elapsed time. TimeReader.__call__ bound to TimeReader.get
+        call: reset elapsed_since_last_call
+
+    Example:
+        clock = Clock.started()
+        # some code 1
+        clock.elapsed_since_start.print()  # "elapsed since start: <duration1>s"
+        # some code 2
+        clock.silent.elapsed_since_last_call.print("some code 2 took")  # "some code 2 took: <duration2>s"
+        # some code 3
+        clock.elapsed_since_last_call.get()  # ~ duration2 + duration3
+        clock.elapsed_since_last_call.get()  # ~ 0
+                                             # clock.elapsed_since_last_call() would work too
     """
 
     def __init__(self, default_rounding_precision=2, _timer=time.perf_counter):
@@ -45,7 +58,7 @@ class Clock:
         self._times["last"] = self._times["init"]
 
 
-class BaseReader:
+class TImeReader:
     def __init__(self, clock, ref_target, default_comment):
         self.clock = clock
         self.ref_target = ref_target
@@ -69,8 +82,11 @@ class BaseReader:
     def print(self, comment=None, rounding_precision=None) -> float:
         return self._print_since(self.get(), comment, rounding_precision)
 
+    def __call__(self):
+        return self.get()
 
-class UpdatingReader(BaseReader):
+
+class UpdatingReader(TImeReader):
 
     def call(self):
         self._update(self.clock._timer())
@@ -82,15 +98,15 @@ class UpdatingReader(BaseReader):
         return elapsed
 
 
-class SilentReader(BaseReader):
+class SilentReader(TImeReader):
     def get(self):
         return self._get(self.clock._timer())
 
 
 class ReaderPair:
     def __init__(self, since_start, since_last_call):
-        self.elapsed_since_start: BaseReader = since_start
-        self.elapsed_since_last_call: BaseReader = since_last_call
+        self.elapsed_since_start: TImeReader = since_start
+        self.elapsed_since_last_call: TImeReader = since_last_call
 
 
 def format_time(t: float, rounding_precision) -> str:
