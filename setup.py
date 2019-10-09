@@ -1,13 +1,20 @@
 from setuptools import setup, find_packages
 
+with open("README.rst") as f:
+    readme = f.read()
+
 setup(
     name="simpleclock",
     version="0",
-    packages=find_packages("src"),
-    package_dir={"": "src"},
     author="lpc",
     author_email="l.pinto.castaneda@gmail.com",
     description="A simple clock",
+    long_description=readme,
+    long_description_content_type="text/x-rst",
     license="MIT",
     keywords="clock",
+    url="https://github.com/chillax9000/simpleclock",
+    packages=find_packages("src"),
+    package_dir={"": "src"},
+    python_requires=">=3.6",
 )
