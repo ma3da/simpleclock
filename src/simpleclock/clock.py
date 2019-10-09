@@ -1,8 +1,5 @@
 import time
 
-default_comment_last_call = "elapsed since last call"
-default_comment_start = "elapsed since start"
-
 
 class Clock:
     """
@@ -28,13 +25,17 @@ class Clock:
                                              # clock.elapsed_since_last_call() would work too
     """
 
-    def __init__(self, default_rounding_precision=2, _timer=time.perf_counter):
+    def __init__(self, default_rounding_precision=2, _timer=time.perf_counter,
+                 default_comment_last_call="elapsed since last call", default_comment_start="elapsed since start"):
         self._timer = _timer
+        self.default_rounding_precision = default_rounding_precision
+        self.default_comment_start = default_comment_start
+        self.default_comment_last_call = default_comment_last_call
+
         self._times = {
             "init": None,
             "last": None
         }
-        self.default_rounding_precision = default_rounding_precision
         self.elapsed_since_start: UpdatingReader = None
         self.elapsed_since_last_call: UpdatingReader = None
         self.silent: ReaderPair = None
@@ -48,10 +49,10 @@ class Clock:
     def start(self, base_time=None):
         self._times["init"] = self._timer() if base_time is None else base_time
         self._times["last"] = self._times["init"]
-        self.elapsed_since_start = UpdatingReader(self, "init", default_comment_start)
-        self.elapsed_since_last_call = UpdatingReader(self, "last", default_comment_last_call)
-        self.silent = ReaderPair(SilentReader(self, "init", default_comment_start),
-                                 SilentReader(self, "last", default_comment_last_call))
+        self.elapsed_since_start = UpdatingReader(self, "init", self.default_comment_start)
+        self.elapsed_since_last_call = UpdatingReader(self, "last", self.default_comment_last_call)
+        self.silent = ReaderPair(SilentReader(self, "init", self.default_comment_start),
+                                 SilentReader(self, "last", self.default_comment_last_call))
 
     def restart(self, base_time=None):
         self._times["init"] = self._timer() if base_time is None else base_time

@@ -49,3 +49,10 @@ def test_print(capsys):
 
     clock.elapsed_since_last_call.print("Another test")
     assert capsys.readouterr().out == "Another test: 7s" + "\n"
+
+
+def test_default_comment(capsys):
+    clock = simpleclock.Clock(_timer=lambda: 5, default_comment_start="it has been running for")
+    clock.start(base_time=0)
+    clock.elapsed_since_start.print()
+    assert capsys.readouterr().out == "it has been running for: 5.00s" + "\n"
