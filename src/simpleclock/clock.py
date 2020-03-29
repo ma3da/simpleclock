@@ -1,7 +1,7 @@
 import time
 import collections
 
-ReadersTuple = collections.namedtuple("ReadersTuple", [
+ReaderTuple = collections.namedtuple("ReaderTuple", [
     "elapsed_since_start",
     "elapsed_since_last_call",
 ])
@@ -9,26 +9,25 @@ ReadersTuple = collections.namedtuple("ReadersTuple", [
 
 class Clock:
     """
-    Simple class for monitoring execution time. Relies on python standard library time (using .perf_counter).
+    Simple class for monitoring execution time. Relies on python standard library time (using .perf_counter). 
+    Keeps a start time and a "last call" time. When a get/print call from a DurationReader instance is made on the Clock, "last call" time is updated to now() (default behaviour, can be prevented). See default/silent attributes.
     attr:
-    -- elapsed_since_start, elapsed_since_last_call: Reader objects, yieling methods: get, print, call. (
-    "since_last_call" means since last non silent method call)
-    -- silent: ReadersTuple yielding silent versions of DurationReader
-    methods.
-    DurationReader methods:
-        get, print: get/print elapsed time. DurationReader.__call__ bound to DurationReader.get
-        call: reset elapsed_since_last_call
+    -- default: ReaderTuple[DurationReader], updating "last call" time
+    -- silent: ReaderTuple[DurationReader], no update
+    -- elapsed_since_start, elapsed_since_last_call: bound to default.elapsed_since_*
+    methods:
+    -- call: sets "last call" time to now()
 
     Example:
-        clock = Clock.started()
-        # some code 1
-        clock.elapsed_since_start.print()  # "elapsed since start: <duration1>s"
-        # some code 2
-        clock.silent.elapsed_since_last_call.print("some code 2 took")  # "some code 2 took: <duration2>s"
-        # some code 3
-        clock.elapsed_since_last_call.get()  # ~ duration2 + duration3
-        clock.elapsed_since_last_call.get()  # ~ 0
-                                             # clock.elapsed_since_last_call() would work too
+    clock = Clock.started()
+    # some code 1
+    clock.elapsed_since_start.print()  # "elapsed since start: <duration1>s"
+    # some code 2
+    clock.silent.elapsed_since_last_call.print("some code 2 took")  # "some code 2 took: <duration2>s"
+    # some code 3
+    clock.elapsed_since_last_call.get()  # ~ duration2 + duration3
+    clock.elapsed_since_last_call.get()  # ~ 0
+                                         # clock.elapsed_since_last_call() would work too
     """
 
     def __init__(self, default_rounding_precision=2,
@@ -48,12 +47,13 @@ class Clock:
         # declaring for autocompletion
         self.elapsed_since_start: DurationReader = None
         self.elapsed_since_last_call: DurationReader = None
-        self.silent: ReadersTuple = None
+        self.silent: ReaderTuple = None
 
     def _now(self):
         return self._timer()
 
     def call(self):
+        """Resets 'last call' time, setting it to now()."""
         self._times["last"] = self._now()
 
     def start(self, base_time=None):
@@ -74,7 +74,7 @@ class Clock:
             return _getter
 
         def readers(reader, duration_getter):
-            return ReadersTuple(
+            return ReaderTuple(
                 elapsed_since_start=reader(
                     duration_getter("init"),
                     self.default_comment_start,
@@ -104,12 +104,17 @@ class Clock:
 
 
 class DurationReader:
+    """Wrapper around a get method giving a duration, which offers two methods:
+        -- get: returns the duration
+        -- print: prints the duration (with formatting options) and returns it
+    """
     def __init__(self, get, default_comment, default_rounding_precision):
         self.get = get
         self.default_comment = default_comment
         self.default_rounding_precision = default_rounding_precision
 
-    def print(self, comment=None, rounding_precision=None):
+    def print(self, comment=None, rounding_precision=None) -> float:
+        """Prints '{comment}: {duration}s' and returns the duration"""
         elapsed = self.get()
         print_comment(elapsed,
                       self.default_comment if comment is None else comment,
