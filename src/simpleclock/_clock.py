@@ -1,31 +1,32 @@
 import time
-import logging
-
-logger = logging.getLogger("SimpleClock")
 
 
 class TimeStamp:
-    def __init__(self, value):
+    def __init__(self, value, name):
         self.value = value
+        self.name = name
 
     def __repr__(self):
         return str(self.value)
 
 
-def ts():
-    return TimeStamp(time.perf_counter())
+def ts(name="Unnamed"):
+    return TimeStamp(time.perf_counter(), name)
 
 
 class Reader:
-    def __init__(self, duration: float, rounding_precision: int, logger=logger):
+    def __init__(self, duration: float, ts_name: str, rounding_precision: int, logger=None):
         self.duration = duration
+        self.ts_name = ts_name
+        self.text_default = ts_name
         self.rounding_precision = rounding_precision
         self.logger = logger
 
     def print(self, text: str = "") -> TimeStamp:
         if text:
             print(f"{text}: {self.duration:.2f}s")
-        print(f"{self.duration:.2f}s")
+        else:
+            print(f"{self.text_default}: {self.duration:.2f}s")
         return ts()
 
     def debug(self) -> TimeStamp:
@@ -46,11 +47,14 @@ class Reader:
 
 
 class Since:
-    def __init__(self, rounding_precision=2):
+    def __init__(self, rounding_precision=2, logger=None):
         self.rounding_precision = rounding_precision
+        self.logger = logger
 
     def __call__(self, ts: TimeStamp) -> Reader:
         return Reader(
             time.perf_counter() - ts.value,
-            self.rounding_precision
+            ts.name,
+            self.rounding_precision,
+            self.logger
         )
