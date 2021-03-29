@@ -13,7 +13,7 @@ setup(
     long_description_content_type="text/x-rst",
     license="MIT",
     keywords="clock",
-    url="https://github.com/chillax9000/simpleclock",
+    url="https://github.com/ma3da/simpleclock",
     packages=find_packages("src"),
     package_dir={"": "src"},
     python_requires=">=3.6",

@@ -1,1 +1,1 @@
-from ._clock import *
+from .clock import *

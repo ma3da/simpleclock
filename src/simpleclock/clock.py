@@ -1,133 +1,64 @@
 import time
-import collections
-
-ReaderTuple = collections.namedtuple("ReaderTuple", [
-    "elapsed_since_start",
-    "elapsed_since_last_call",
-])
 
 
-class Clock:
-    """
-    Simple class for monitoring execution time. Relies on python standard library time (using .perf_counter). 
-    Keeps a start time and a "last call" time. When a get/print call from a DurationReader instance is made on the Clock, "last call" time is updated to now() (default behaviour, can be prevented). See default/silent attributes.
-    attr:
-    -- default: ReaderTuple[DurationReader], updating "last call" time
-    -- silent: ReaderTuple[DurationReader], no update
-    -- elapsed_since_start, elapsed_since_last_call: bound to default.elapsed_since_*
-    methods:
-    -- call: sets "last call" time to now()
+class TimeStamp:
+    def __init__(self, value, name):
+        self.value = value
+        self.name = name
 
-    Example:
-    clock = Clock.started()
-    # some code 1
-    clock.elapsed_since_start.print()  # "elapsed since start: <duration1>s"
-    # some code 2
-    clock.silent.elapsed_since_last_call.print("some code 2 took")  # "some code 2 took: <duration2>s"
-    # some code 3
-    clock.elapsed_since_last_call.get()  # ~ duration2 + duration3
-    clock.elapsed_since_last_call.get()  # ~ 0
-                                         # clock.elapsed_since_last_call() would work too
-    """
-
-    def __init__(self, default_rounding_precision=2,
-                 default_comment_last_call="elapsed since last call",
-                 default_comment_start="elapsed since start",
-                 timer=time.perf_counter):
-        self.default_rounding_precision = default_rounding_precision
-        self.default_comment_start = default_comment_start
-        self.default_comment_last_call = default_comment_last_call
-        self._timer = timer
-
-        self._times = {
-            "init": None,
-            "last": None
-        }
-
-        # declaring for autocompletion
-        self.elapsed_since_start: DurationReader = None
-        self.elapsed_since_last_call: DurationReader = None
-        self.silent: ReaderTuple = None
-
-    def _now(self):
-        return self._timer()
-
-    def call(self):
-        """Resets 'last call' time, setting it to now()."""
-        self._times["last"] = self._now()
-
-    def start(self, base_time=None):
-        self._times["init"] = self._timer() if base_time is None else base_time
-        self._times["last"] = self._times["init"]
-
-        def duration_getter_no_update(begin_mark):
-            def _getter():
-                return self._now() - self._times[begin_mark]
-            return _getter
-
-        def duration_getter_with_update(begin_mark):
-            def _getter():
-                now = self._now()
-                elapsed = now - self._times[begin_mark]
-                self._times["last"] = now
-                return elapsed
-            return _getter
-
-        def readers(reader, duration_getter):
-            return ReaderTuple(
-                elapsed_since_start=reader(
-                    duration_getter("init"),
-                    self.default_comment_start,
-                    self.default_rounding_precision),
-                elapsed_since_last_call=reader(
-                    duration_getter("last"),
-                    self.default_comment_last_call,
-                    self.default_rounding_precision)
-            )
-
-        self.default = readers(DurationReader, duration_getter_with_update)
-        self.silent = readers(DurationReader, duration_getter_no_update)
-        
-        # binding to default
-        self.elapsed_since_start = self.default.elapsed_since_start
-        self.elapsed_since_last_call = self.default.elapsed_since_last_call
-
-    def restart(self, base_time=None):
-        self._times["init"] = self._timer() if base_time is None else base_time
-        self._times["last"] = self._times["init"]
-
-    @classmethod
-    def started(cls, *args, **kwargs):
-        clock = cls(*args, **kwargs)
-        clock.start()
-        return clock
+    def __repr__(self):
+        return f"<TimeStamp: {self.name}>"
 
 
-class DurationReader:
-    """Wrapper around a get method giving a duration, which offers two methods:
-        -- get: returns the duration
-        -- print: prints the duration (with formatting options) and returns it
-    """
-    def __init__(self, get, default_comment, default_rounding_precision):
-        self.get = get
-        self.default_comment = default_comment
-        self.default_rounding_precision = default_rounding_precision
-
-    def print(self, comment=None, rounding_precision=None) -> float:
-        """Prints '{comment}: {duration}s' and returns the duration"""
-        elapsed = self.get()
-        print_comment(elapsed,
-                      self.default_comment if comment is None else comment,
-                      self.default_rounding_precision if rounding_precision is None else rounding_precision)
-        return elapsed
-
-    def __call__(self):
-        return self.get()
+def ts(name="Unnamed"):
+    return TimeStamp(time.perf_counter(), name)
 
 
-def format_time(t: float, rounding_precision) -> str:
-    return f"{t:.{rounding_precision}f}s"
+class Reader:
+    def __init__(self, duration: float, ts_name: str, precision: int, logger=None):
+        self.duration = duration
+        self.ts_name = ts_name
+        self.text_default = ts_name
+        self.logger = logger
+        self.rnd_fmt = f".{precision}f"
 
 
-def print_comment(elapsed, comment, rounding_precision):
-    print(f"{comment}:", format_time(elapsed, rounding_precision))
+    def print(self, text: str = "") -> TimeStamp:
+        if text:
+            print(f"{text}: {self.duration:{self.rnd_fmt}}s")
+        else:
+            print(f"{self.text_default}: {self.duration:{self.rnd_fmt}}s")
+        return ts()
+
+    def debug(self) -> TimeStamp:
+        self.logger.debug(f"{self.duration:{self.rnd_fmt}}s")
+        return ts()
+
+    def info(self) -> TimeStamp:
+        self.logger.info(f"{self.duration:{self.rnd_fmt}}s")
+        return ts()
+
+    def warning(self) -> TimeStamp:
+        self.logger.warning(f"{self.duration:{self.rnd_fmt}}s")
+        return ts()
+
+    def error(self) -> TimeStamp:
+        self.logger.error(f"{self.duration:{self.rnd_fmt}}s")
+        return ts()
+
+
+class Since:
+    def __init__(self, precision: int = 2, logger=None):
+        try:
+            self.precision = int(precision)
+        except ValueError:
+            raise ValueError(f"precision expects an int, unlike: {precision}")
+        self.logger = logger
+
+    def __call__(self, ts: TimeStamp) -> Reader:
+        return Reader(
+            time.perf_counter() - ts.value,
+            ts.name,
+            self.precision,
+            self.logger
+        )
