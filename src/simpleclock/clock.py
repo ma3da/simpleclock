@@ -22,28 +22,30 @@ class Reader:
         self.logger = logger
         self.rnd_fmt = f".{precision}f"
 
+    def format(self, text: str = "") -> str:
+        if text:
+            return f"{text}: {self.duration:{self.rnd_fmt}}s"
+        else:
+            return f"{self.text_default}: {self.duration:{self.rnd_fmt}}s"
 
     def print(self, text: str = "") -> TimeStamp:
-        if text:
-            print(f"{text}: {self.duration:{self.rnd_fmt}}s")
-        else:
-            print(f"{self.text_default}: {self.duration:{self.rnd_fmt}}s")
+        print(self.format(text))
         return ts()
 
-    def debug(self) -> TimeStamp:
-        self.logger.debug(f"{self.duration:{self.rnd_fmt}}s")
+    def debug(self, text: str = "") -> TimeStamp:
+        self.logger.debug(self.format(text))
         return ts()
 
-    def info(self) -> TimeStamp:
-        self.logger.info(f"{self.duration:{self.rnd_fmt}}s")
+    def info(self, text: str = "") -> TimeStamp:
+        self.logger.info(self.format(text))
         return ts()
 
-    def warning(self) -> TimeStamp:
-        self.logger.warning(f"{self.duration:{self.rnd_fmt}}s")
+    def warning(self, text: str = "") -> TimeStamp:
+        self.logger.warning(self.format(text))
         return ts()
 
-    def error(self) -> TimeStamp:
-        self.logger.error(f"{self.duration:{self.rnd_fmt}}s")
+    def error(self, text: str = "") -> TimeStamp:
+        self.logger.error(self.format(text))
         return ts()
 
 
