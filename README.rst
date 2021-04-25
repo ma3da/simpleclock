@@ -2,21 +2,22 @@ simpleclock
 ===========
 .. code-block:: python
 
-    import simpleclock
+    import logging
 
-    clock = Clock.started()
+    import simpleclock as sc
+
+    since = sc.Since(logger=logging.getLogger())
+    start = sc.ts()
 
     # some code 1
 
-    clock.elapsed_since_start.print()  # >>> elapsed since start: <duration1>s
+    ts = since(start).print("first")  # >>> first: 10.00s
 
     # some code 2
 
-    clock.silent.elapsed_since_last_call.print("some code 2 took")  # >>> some code 2 took: <duration2>s
+    ts = since(ts).info("some code 2 took")  # >>> 1970-01-01 00:00:40,000 - root - INFO - some code 2 took: 30.00s
 
     # some code 3
 
-    clock.elapsed_since_last_call()  # ~ duration2 + duration3
-    clock.elapsed_since_last_call()  # ~ 0
-    clock.elapsed_since_start()      # ~ duration1 + ... + duration3
-
+    since(ts).duration  # ~ 2.
+    since(start).duration  # ~ 42.
