@@ -22,29 +22,29 @@ class Reader:
         self.logger = logger
         self.rnd_fmt = f".{precision}f"
 
-    def format(self, text: str = "") -> str:
-        if text:
+    def format(self, text: str = None) -> str:
+        if text is not None:
             return f"{text}: {self.duration:{self.rnd_fmt}}s"
         else:
             return f"{self.text_default}: {self.duration:{self.rnd_fmt}}s"
 
-    def print(self, text: str = "") -> TimeStamp:
+    def print(self, text: str = None) -> TimeStamp:
         print(self.format(text))
         return ts()
 
-    def debug(self, text: str = "") -> TimeStamp:
+    def debug(self, text: str = None) -> TimeStamp:
         self.logger.debug(self.format(text))
         return ts()
 
-    def info(self, text: str = "") -> TimeStamp:
+    def info(self, text: str = None) -> TimeStamp:
         self.logger.info(self.format(text))
         return ts()
 
-    def warning(self, text: str = "") -> TimeStamp:
+    def warning(self, text: str = None) -> TimeStamp:
         self.logger.warning(self.format(text))
         return ts()
 
-    def error(self, text: str = "") -> TimeStamp:
+    def error(self, text: str = None) -> TimeStamp:
         self.logger.error(self.format(text))
         return ts()
 
@@ -59,8 +59,5 @@ class Since:
 
     def __call__(self, ts: TimeStamp) -> Reader:
         return Reader(
-            time.perf_counter() - ts.value,
-            ts.name,
-            self.precision,
-            self.logger
+            time.perf_counter() - ts.value, ts.name, self.precision, self.logger
         )
